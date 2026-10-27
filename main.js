@@ -10,14 +10,17 @@ function createWindow() {
     width: 1300,
     height: 800,
     title: "WhereAbouts — EMSD Team Tracker",
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   });
 
-  // Load the built Vite/React static files
-  mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  mainWindow.loadFile(indexPath).catch(err => {
+    console.error("Failed to load index.html:", err);
+  });
 }
 
 app.whenReady().then(() => {
