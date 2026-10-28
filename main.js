@@ -9,7 +9,7 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1300,
     height: 800,
-    title: "WhereAbouts — EMSD Team Tracker",
+    title: "Who's Around",
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
@@ -22,8 +22,10 @@ function createWindow() {
     console.error("Failed to load index.html:", err);
   });
 
-  // 自動開啟開發者工具 (DevTools)，以便檢查主控台錯誤
-  mainWindow.webContents.openDevTools();
+  // 確保網頁載入完成後自動彈出開發者主控台，方便查看錯誤
+  mainWindow.webContents.once('did-finish-load', () => {
+    mainWindow.webContents.openDevTools();
+  });
 }
 
 app.whenReady().then(() => {
