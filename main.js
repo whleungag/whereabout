@@ -21,6 +21,9 @@ function createWindow() {
   mainWindow.loadFile(indexPath).catch(err => {
     console.error("Failed to load index.html:", err);
   });
+
+  // 自動開啟開發者工具主控台
+  mainWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
