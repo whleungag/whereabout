@@ -17,14 +17,9 @@ function createWindow() {
     }
   });
 
-  const indexPath = path.join(__dirname, 'build', 'index.html');
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
   mainWindow.loadFile(indexPath).catch(err => {
     console.error("Failed to load index.html:", err);
-  });
-
-  // 確保網頁載入完成後自動彈出開發者主控台，方便查看錯誤
-  mainWindow.webContents.once('did-finish-load', () => {
-    mainWindow.webContents.openDevTools();
   });
 }
 
