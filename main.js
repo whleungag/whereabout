@@ -17,11 +17,13 @@ function createWindow() {
     }
   });
 
-  // 指向新的 build 資料夾
   const indexPath = path.join(__dirname, 'build', 'index.html');
   mainWindow.loadFile(indexPath).catch(err => {
     console.error("Failed to load index.html:", err);
   });
+
+  // 自動開啟開發者工具 (DevTools)，以便檢查主控台錯誤
+  mainWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
