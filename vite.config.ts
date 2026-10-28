@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: {
-    outDir: 'dist',
+    outDir: 'dist', // 統一輸出到 dist
   },
   resolve: {
     alias: {
