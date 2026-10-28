@@ -17,7 +17,8 @@ function createWindow() {
     }
   });
 
-  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  // 指向新的 build 資料夾
+  const indexPath = path.join(__dirname, 'build', 'index.html');
   mainWindow.loadFile(indexPath).catch(err => {
     console.error("Failed to load index.html:", err);
   });
