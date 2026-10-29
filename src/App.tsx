@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { localStore } from '@/lib/localStore'; // 改用本地檔案儲存
 import { Post, Event, Status } from '@/types';
 import Header from '@/components/Header';
 import PersonCard from '@/components/PersonCard';
@@ -26,19 +26,28 @@ export default function App() {
   const [showGuide, setShowGuide] = useState(false);
   const [showAddPost, setShowAddPost] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    const [{ data: postsData }, { data: eventsData }] = await Promise.all([
-      supabase.from('posts').select('*').order('display_order').order('created_at'),
-      supabase.from('events').select('*').order('date_start'),
-    ]);
-    if (postsData) setPosts(postsData as Post[]);
-    if (eventsData) setEvents(eventsData as Event[]);
-    setLastSync(formatSyncTime(new Date()));
-    setLoading(false);
+  // 從共用磁碟機的 data.json 讀取資料
+  const fetchData = useCallback(() => {
+    try {
+      const data = localStore.readData(); // 從 localStore 讀取 posts 與 events
+      if (data.posts) setPosts(data.posts as Post[]);
+      if (data.events) setEvents(data.events as Event[]);
+      setLastSync(formatSyncTime(new Date()));
+    } catch (err) {
+      console.error("Error reading local data:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  // 頁面載入時讀取，並設定每 3 秒自動循環重新整理 (Auto Refresh)
   useEffect(() => {
     fetchData();
+
+    // 輪詢機制：每 3 秒自動讀取一次網芳的 data.json，實現多人離線即時同步
+    const intervalId = setInterval(() => {
+      fetchData();
+    }, 3000);
 
     // keyboard shortcuts
     const handler = (e: KeyboardEvent) => {
@@ -50,7 +59,11 @@ export default function App() {
       }
     };
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('keydown', handler);
+    };
   }, [fetchData]);
 
   // If selectedPost changed (after refresh), sync it
@@ -89,7 +102,7 @@ export default function App() {
     ]));
     const csv = [['Post', 'Nickname', 'Start', 'End', 'Event', 'Category', 'Time', 'Remarks'], ...rows]
       .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
-      .join('\\n');
+      .join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
