@@ -1,42 +1,43 @@
-// 透過 Electron 的 nodeIntegration 存取 Node.js fs 模組
 const fs = window.require ? window.require('fs') : null;
 const path = window.require ? window.require('path') : null;
 
-// 將資料檔存在 .exe 同級目錄下的 data.json
+// 資料存放在 .exe 同級目錄下的 data.json (共用磁碟機)
 const getFilePath = () => {
   if (!path) return 'data.json';
   return path.join(process.cwd(), 'data.json');
 };
 
 export const localStore = {
-  // 讀取所有貼文 / 成員資料
-  readPosts: () => {
+  // 讀取所有資料 (posts 與 events)
+  readData: () => {
     try {
-      if (!fs) return [];
+      if (!fs) return { posts: [], events: [] };
       const filePath = getFilePath();
       if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, JSON.stringify([]), 'utf8');
-        return [];
+        const initialData = { posts: [], events: [] };
+        fs.writeFileSync(filePath, JSON.stringify(initialData, null, 2), 'utf8');
+        return initialData;
       }
       const data = fs.readFileSync(filePath, 'utf8');
-      return JSON.parse(data || '[]');
+      const parsed = JSON.parse(data || '{}');
+      return {
+        posts: parsed.posts || [],
+        events: parsed.events || []
+      };
     } catch (err) {
       console.error("Failed to read local store:", err);
-      return [];
+      return { posts: [], events: [] };
     }
   },
 
-  // 寫入/新增貼文
-  writePost: (newPost: any) => {
+  // 儲存完整資料
+  writeData: (data: { posts: any[]; events: any[] }) => {
     try {
-      if (!fs) return false;
+      if (!fs) return;
       const filePath = getFilePath();
-      const currentPosts = localStore.readPosts();
-      const updatedPosts = [newPost, ...currentPosts];
-      fs.writeFileSync(filePath, JSON.stringify(updatedPosts, null, 2), 'utf8');
-      return true;
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
     } catch (err) {
-      console.error("Failed to write to local store:", err);
+      console.error("Failed to write local store:", err);
       throw err;
     }
   }
