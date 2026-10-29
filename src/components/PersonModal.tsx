@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, RefreshCw, X } from 'lucide-react';
 import { Post, Event, Status, TimeSlot, EventCategory, DateMode } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { localStore } from '@/lib/localStore'; // 改用本地檔案儲存
 import {
   STATUS_CONFIG,
   CATEGORY_COLORS,
@@ -118,14 +118,12 @@ function MiniCalendar({
 }
 
 export default function PersonModal({ post, events, onClose, onRefresh }: PersonModalProps) {
-  // --- post edit state ---
   const [editing, setEditing] = useState(false);
   const [editPostId, setEditPostId] = useState(post.post_id);
   const [editNickname, setEditNickname] = useState(post.nickname ?? '');
   const [editWorkHours, setEditWorkHours] = useState(post.work_hours ?? '');
   const [saving, setSaving] = useState(false);
 
-  // --- new event form state ---
   const [name, setName] = useState('');
   const [remarks, setRemarks] = useState('');
   const [category, setCategory] = useState<EventCategory>('other');
@@ -149,7 +147,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
 
   const [showPast, setShowPast] = useState(false);
 
-  // Auto-detect category as user types
   useEffect(() => {
     if (!name.trim()) {
       setAutoDetected(true);
@@ -159,14 +156,12 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
     if (autoDetected) {
       setCategory(inferCategory(name));
     }
-  }, [name]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [name]);
 
-  // Compute live status from active events
   const derivedStatus = computeStatus(events, post.status);
   const isAutoStatus = derivedStatus !== post.status;
   const cfg = STATUS_CONFIG[derivedStatus];
 
-  // Preview: how many rows will be inserted
   const totalOccurrences = useMemo(() => {
     let baseCount = 0;
     if (mode === 'single')  baseCount = selectedDates.length > 0 ? 1 : 0;
@@ -214,6 +209,7 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
     setRangeStart(null); setRangeEnd(null); setMultiDates([]); setRangeStep(0);
   }
 
+  // --- 改用 localStore 新增事件 ---
   async function handleAddEvent() {
     if (!name.trim()) return;
 
@@ -233,7 +229,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
     const ruleLabel = repeatFreq !== 'none' && repeatUntil
       ? `${repeatFreq} until ${repeatUntil}` : null;
 
-    // Expand repeats per base pair
     const allPairs = (repeatFreq !== 'none' && repeatUntil)
       ? basePairs.flatMap(p => expandRepeat(p.start, p.end, repeatFreq as Exclude<RepeatFrequency,'none'>, repeatUntil))
       : basePairs;
@@ -252,31 +247,33 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
       repeat_rule: ruleLabel,
     }));
 
-    await supabase.from('events').insert(rows);
+    localStore.addEvents(rows);
     setAdding(false);
     resetForm();
     onRefresh();
   }
 
+  // --- 改用 localStore 刪除事件 ---
   async function handleDeleteEvent(id: string) {
-    await supabase.from('events').delete().eq('id', id);
+    localStore.deleteEvent(id);
     onRefresh();
   }
 
+  // --- 改用 localStore 更新狀態 ---
   async function handleStatusChange(s: Status) {
-    await supabase.from('posts').update({ status: s, updated_at: new Date().toISOString() }).eq('id', post.id);
+    localStore.updatePostFields(post.id, { status: s });
     onRefresh();
   }
 
+  // --- 改用 localStore 儲存貼文資訊 ---
   async function handleSavePost() {
     if (!editPostId.trim()) return;
     setSaving(true);
-    await supabase.from('posts').update({
+    localStore.updatePostFields(post.id, {
       post_id: editPostId.trim(),
       nickname: editNickname.trim() || null,
       work_hours: editWorkHours.trim() || null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', post.id);
+    });
     setSaving(false); setEditing(false); onRefresh();
   }
 
@@ -326,7 +323,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Status button — derived from live events */}
             <div className="relative group">
               <button
                 className="flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-xs font-medium transition-colors"
@@ -361,13 +357,10 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
 
         {/* Body */}
         <div className="flex flex-1 overflow-hidden">
-
-          {/* Left: Add event form */}
           <div className="w-80 shrink-0 border-r border-gray-200 flex flex-col overflow-y-auto">
             <div className="p-4 flex flex-col gap-3">
               <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">New event</div>
 
-              {/* Event name */}
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -375,7 +368,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                 className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
 
-              {/* Category pills — auto-detected, manually overridable */}
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-xs text-gray-500">Category</span>
@@ -400,7 +392,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                 </div>
               </div>
 
-              {/* Remarks */}
               <input
                 value={remarks}
                 onChange={e => setRemarks(e.target.value)}
@@ -408,7 +399,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                 className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
 
-              {/* Date mode */}
               <div className="flex gap-1">
                 {(['single', 'range', 'multi'] as DateMode[]).map(m => (
                   <button key={m}
@@ -419,7 +409,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                 ))}
               </div>
 
-              {/* Calendar */}
               <MiniCalendar
                 year={calYear} month={calMonth}
                 selected={selectedDates} rangeStart={rangeStart} rangeEnd={rangeEnd}
@@ -427,7 +416,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                 onSelect={handleDateSelect} onNavigate={handleNavigate}
               />
 
-              {/* Today shortcut */}
               <button
                 onClick={() => {
                   const td = toDateString(new Date());
@@ -441,7 +429,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                 <span>📅</span> Today
               </button>
 
-              {/* Time slot */}
               <div className="flex gap-1">
                 {(['full_day', 'am', 'pm', 'time'] as TimeSlot[]).map(ts => (
                   <button key={ts} onClick={() => setTimeSlot(ts)}
@@ -460,7 +447,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                 </div>
               )}
 
-              {/* Repeat */}
               <div className="border-t border-gray-100 pt-3">
                 <div className="text-xs text-gray-500 mb-1.5">Repeat</div>
                 <div className="flex gap-1">
@@ -493,7 +479,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
               </div>
             </div>
 
-            {/* Action buttons */}
             <div className="p-4 pt-0 flex gap-2">
               <button
                 onClick={handleAddEvent}
@@ -509,7 +494,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
             </div>
           </div>
 
-          {/* Right: Events list */}
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
