@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { localStore } from '@/lib/localStore';
 import { Post, Event, Status } from '@/types';
+import { computeStatus } from '@/lib/utils';
 import Header from '@/components/Header';
 import PersonCard from '@/components/PersonCard';
 import PersonModal from '@/components/PersonModal';
@@ -69,19 +70,25 @@ export default function App() {
     }
   }, [posts]);
 
+  const eventsForPost = (id: string) => events.filter(e => e.post_id === id);
+
+  // Filter posts based on live computed status and search query
   const filteredPosts = posts.filter(p => {
-    if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+    const pEvents = eventsForPost(p.id);
+    const liveStatus = computeStatus(pEvents, p.status);
+
+    if (statusFilter !== 'all' && liveStatus !== statusFilter) return false;
     if (!search.trim()) return true;
+    
     const q = search.toLowerCase();
     return (
       p.post_id.toLowerCase().includes(q) ||
       (p.nickname?.toLowerCase().includes(q) ?? false) ||
-      p.status.toLowerCase().includes(q) ||
-      events.filter(e => e.post_id === p.id).some(e => e.name.toLowerCase().includes(q) || (e.remarks?.toLowerCase().includes(q) ?? false))
+      liveStatus.toLowerCase().includes(q) ||
+      pEvents.some(e => e.name.toLowerCase().includes(q) || (e.remarks?.toLowerCase().includes(q) ?? false))
     );
   });
 
-  const eventsForPost = (id: string) => events.filter(e => e.post_id === id);
   const upcomingCount = events.filter(event => event.date_end >= new Date().toISOString().slice(0, 10)).length;
 
   if (loading) {
@@ -96,6 +103,7 @@ export default function App() {
     <div className="dashboard-shell h-screen flex flex-col overflow-hidden">
       <Header
         view={view}
+        onViewCardChange={setView}
         onViewChange={setView}
         search={search}
         onSearch={setSearch}
