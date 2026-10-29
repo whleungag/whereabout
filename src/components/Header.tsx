@@ -1,4 +1,4 @@
-import { Calendar, Download, Grid2X2, HelpCircle, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
+import { Calendar, Grid2X2, HelpCircle, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
 import { Status } from '@/types';
 import { STATUS_CONFIG } from '@/lib/utils';
 
@@ -9,7 +9,6 @@ interface HeaderProps {
   onSearch: (s: string) => void;
   onRefresh: () => void;
   onGuide: () => void;
-  onExport: () => void;
   statusFilter: Status | 'all';
   onStatusFilter: (status: Status | 'all') => void;
   lastSync: string | null;
@@ -25,7 +24,6 @@ export default function Header({
   onSearch,
   onRefresh,
   onGuide,
-  onExport,
   statusFilter,
   onStatusFilter,
   lastSync,
@@ -60,7 +58,6 @@ export default function Header({
           </div>
 
           <div className="ml-auto flex items-center gap-1.5">
-            <button onClick={onExport} title="Export visible schedule" className="toolbar-button"><Download className="h-4 w-4" /></button>
             <button onClick={onRefresh} title="Refresh schedule" className="toolbar-button"><RefreshCw className="h-4 w-4" /></button>
             <button onClick={onGuide} title="Open guide" className="toolbar-button"><HelpCircle className="h-4 w-4" /></button>
             <button onClick={() => onViewChange(view === 'cards' ? 'calendar' : 'cards')} title="Switch view" className="toolbar-button">
