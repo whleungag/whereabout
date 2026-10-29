@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
-import { localStore } from '@/lib/localStore'; // 改用本地檔案儲存
+import { localStore } from '@/lib/localStore';
 import { Post, Event, Status } from '@/types';
 import Header from '@/components/Header';
 import PersonCard from '@/components/PersonCard';
@@ -26,10 +26,9 @@ export default function App() {
   const [showGuide, setShowGuide] = useState(false);
   const [showAddPost, setShowAddPost] = useState(false);
 
-  // 從共用磁碟機的 data.json 讀取資料
   const fetchData = useCallback(() => {
     try {
-      const data = localStore.readData(); // 從 localStore 讀取 posts 與 events
+      const data = localStore.readData();
       if (data.posts) setPosts(data.posts as Post[]);
       if (data.events) setEvents(data.events as Event[]);
       setLastSync(formatSyncTime(new Date()));
@@ -40,16 +39,13 @@ export default function App() {
     }
   }, []);
 
-  // 頁面載入時讀取，並設定每 3 秒自動循環重新整理 (Auto Refresh)
   useEffect(() => {
     fetchData();
 
-    // 輪詢機制：每 3 秒自動讀取一次網芳的 data.json，實現多人離線即時同步
     const intervalId = setInterval(() => {
       fetchData();
     }, 3000);
 
-    // keyboard shortcuts
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'F5') { e.preventDefault(); fetchData(); }
       if (e.key === 'Escape') { setSearch(''); setSelectedPost(null); setShowGuide(false); setShowAddPost(false); }
@@ -66,7 +62,6 @@ export default function App() {
     };
   }, [fetchData]);
 
-  // If selectedPost changed (after refresh), sync it
   useEffect(() => {
     if (selectedPost) {
       const updated = posts.find(p => p.id === selectedPost.id);
@@ -89,28 +84,6 @@ export default function App() {
   const eventsForPost = (id: string) => events.filter(e => e.post_id === id);
   const upcomingCount = events.filter(event => event.date_end >= new Date().toISOString().slice(0, 10)).length;
 
-  function exportSchedule() {
-    const rows = filteredPosts.flatMap(post => eventsForPost(post.id).map(event => [
-      post.post_id,
-      post.nickname ?? '',
-      event.date_start,
-      event.date_end,
-      event.name,
-      event.category,
-      event.time_slot,
-      event.remarks ?? '',
-    ]));
-    const csv = [['Post', 'Nickname', 'Start', 'End', 'Event', 'Category', 'Time', 'Remarks'], ...rows]
-      .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `whereabouts-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   if (loading) {
     return (
       <div className="dashboard-shell min-h-screen flex items-center justify-center">
@@ -128,7 +101,6 @@ export default function App() {
         onSearch={setSearch}
         onRefresh={fetchData}
         onGuide={() => setShowGuide(true)}
-        onExport={exportSchedule}
         statusFilter={statusFilter}
         onStatusFilter={setStatusFilter}
         lastSync={lastSync}
@@ -152,9 +124,9 @@ export default function App() {
               {/* Add new post card */}
               <button
                 onClick={() => setShowAddPost(true)}
-                className="min-h-[180px] cursor-pointer rounded-[22px] border border-dashed border-[#b9cddd] bg-white/60 p-4 text-[#7890a5] transition hover:border-[#67b7b0] hover:bg-[#f5fffc] hover:text-[#267b75]"
+                className="min-h-[180px] cursor-pointer rounded-[22px] border border-dashed border-[#b9cddd] bg-white/60 p-4 text-[#7890a5] transition hover:border-[#67b7b0] hover:bg-[#f5fffc] hover:text-[#267b75] flex flex-col items-center justify-center gap-2"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-6 w-6" />
                 <span className="text-sm font-semibold">Add a teammate</span>
               </button>
             </div>
