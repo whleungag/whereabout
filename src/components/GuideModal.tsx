@@ -10,7 +10,6 @@ const statusDots = [
   { color: '#60a5fa', label: 'On Leave' },
   { color: '#f59e0b', label: 'Meeting' },
   { color: '#ef4444', label: 'Other Engagement' },
-  { color: '#d1d5db', label: 'Vacant (card greyed out)' },
 ];
 
 const autoTagRules: {
@@ -64,7 +63,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
             Each card is one post. Click a card to open and edit its schedule.
           </p>
 
-          {/* Status dot legend */}
+          {/* Status indicator */}
           <div>
             <div className="font-semibold text-gray-700 mb-2 text-xs uppercase tracking-wider">Status indicator</div>
             <div className="flex flex-col gap-1.5">
@@ -76,11 +75,11 @@ export default function GuideModal({ onClose }: GuideModalProps) {
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-2">
-              Default is <strong>Available</strong> when there are no active events. Status auto-switches to In Training, On Leave, Meeting, or Other Engagement based on today's event category. You can override it manually inside the schedule.
+              Default is <strong>Available</strong> when there are no active events. Status auto-switches to In Training, On Leave, Meeting, or Other Engagement based on today's event category.
             </p>
           </div>
 
-          {/* Auto-tag keyword reference */}
+          {/* Auto-tag keywords */}
           <div>
             <div className="font-semibold text-gray-700 mb-1 text-xs uppercase tracking-wider">
               Auto-tag keywords
@@ -111,20 +110,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
             </div>
           </div>
 
-          {/* Event row style guide */}
-          <div>
-            <div className="font-semibold text-gray-700 mb-2 text-xs uppercase tracking-wider">Event row styles</div>
-            <div className="flex flex-col gap-1.5 text-xs text-gray-600">
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-0.5 bg-gray-600 shrink-0" /> Highlighted — active right now
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-0.5 bg-gray-300 shrink-0 opacity-50" /> Dimmed — past event
-              </div>
-            </div>
-          </div>
-
-          {/* Repeat */}
+          {/* Repeating events */}
           <div>
             <div className="font-semibold text-gray-700 mb-2 text-xs uppercase tracking-wider">Repeating events</div>
             <p className="text-xs text-gray-500">
