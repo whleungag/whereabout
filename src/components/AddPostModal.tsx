@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { localStore } from '@/lib/localStore'; // 改用本地檔案儲存
 
 interface AddPostModalProps {
   onClose: () => void;
@@ -15,18 +15,31 @@ export default function AddPostModal({ onClose, onRefresh }: AddPostModalProps) 
   const [error, setError] = useState('');
 
   async function handleSave() {
-    if (!postId.trim()) { setError('Post ID is required'); return; }
+    if (!postId.trim()) {
+      setError('Post ID is required');
+      return;
+    }
     setSaving(true);
-    const { error: err } = await supabase.from('posts').insert({
-      post_id: postId.trim(),
-      nickname: nickname.trim() || null,
-      work_hours: workHours.trim() || null,
-      status: 'available',
-    });
-    setSaving(false);
-    if (err) { setError(err.message); return; }
-    onRefresh();
-    onClose();
+    setError('');
+
+    try {
+      // 離線寫入共用磁碟機的 data.json 檔案
+      localStore.writePost({
+        id: Date.now().toString(),
+        post_id: postId.trim(),
+        nickname: nickname.trim() || null,
+        work_hours: workHours.trim() || null,
+        status: 'available',
+        created_at: new Date().toISOString()
+      });
+
+      setSaving(false);
+      onRefresh(); // 重新整理父畫面清單
+      onClose();   // 關閉彈出視窗
+    } catch (err: any) {
+      setSaving(false);
+      setError(err.message || 'Failed to save post locally.');
+    }
   }
 
   return (
