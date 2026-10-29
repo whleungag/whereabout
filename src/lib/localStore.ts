@@ -42,21 +42,24 @@ export const localStore = {
     }
   },
 
-  // 3. 新增貼文 (Add Post)
-  addPost: (newPost: any) => {
+  // 3. 支援 AddPostModal 呼叫的寫入方法
+  writePost: (newPost: any) => {
     const data = localStore.readData();
-    data.posts.unshift(newPost);
+    data.posts.unshift(newPost); // 將新貼文加到最前面
     localStore.writeData(data);
   },
 
-  // 4. 更新貼文 (Update Post)
+  // 4. 其它 CRUD 輔助方法
+  addPost: (newPost: any) => {
+    localStore.writePost(newPost);
+  },
+
   updatePost: (updatedPost: any) => {
     const data = localStore.readData();
     data.posts = data.posts.map((p: any) => p.id === updatedPost.id ? updatedPost : p);
     localStore.writeData(data);
   },
 
-  // 5. 刪除貼文與其關聯事件 (Delete Post)
   deletePost: (postId: string) => {
     const data = localStore.readData();
     data.posts = data.posts.filter((p: any) => p.id !== postId);
@@ -64,7 +67,6 @@ export const localStore = {
     localStore.writeData(data);
   },
 
-  // 6. 儲存/新增行程事件 (Save Event)
   saveEvent: (newEvent: any) => {
     const data = localStore.readData();
     const index = data.events.findIndex((e: any) => e.id === newEvent.id);
@@ -76,7 +78,6 @@ export const localStore = {
     localStore.writeData(data);
   },
 
-  // 7. 刪除行程事件 (Delete Event)
   deleteEvent: (eventId: string) => {
     const data = localStore.readData();
     data.events = data.events.filter((e: any) => e.id !== eventId);
