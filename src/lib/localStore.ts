@@ -86,7 +86,19 @@ export const localStore = {
     localStore.writeData(data);
   },
 
-  // 7. 刪除單一行程事件
+  // 7. 儲存或更新單一行程事件 (支援編輯現有行程)
+  saveEvent: (event: any) => {
+    const data = localStore.readData();
+    const index = data.events.findIndex((e: any) => e.id === event.id);
+    if (index >= 0) {
+      data.events[index] = event; // 如果 ID 已存在，則直接覆寫修改
+    } else {
+      data.events.push(event);    // 如果是新行程，則推入陣列
+    }
+    localStore.writeData(data);
+  },
+
+  // 8. 刪除單一行程事件
   deleteEvent: (eventId: string) => {
     const data = localStore.readData();
     data.events = data.events.filter((e: any) => e.id !== eventId);
