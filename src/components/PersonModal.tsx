@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, RefreshCw, X, Edit2 } from 'lucide-react';
-import { Post, Event, Status, TimeSlot, EventCategory, DateMode } from '@/types';
+import { ChevronLeft, ChevronRight, RefreshCw, X, Edit2, Trash2 } from 'lucide-react';
+import { Post, Event, TimeSlot, EventCategory, DateMode } from '@/types';
 import { localStore } from '@/lib/localStore';
 import {
   STATUS_CONFIG,
@@ -22,8 +22,6 @@ interface PersonModalProps {
   onClose: () => void;
   onRefresh: () => void;
 }
-
-const STATUSES: Status[] = ['available', 'in_training', 'on_leave', 'meeting', 'other_engagement', 'vacant'];
 
 const CATEGORY_CFG: Record<EventCategory, { label: string; active: string }> = {
   leave:    { label: 'Leave',    active: 'bg-blue-100 border-blue-400 text-blue-700' },
@@ -124,7 +122,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
   const [editWorkHours, setEditWorkHours] = useState(post.work_hours ?? '');
   const [savingPost, setSavingPost] = useState(false);
 
-  // Event form state (support adding & editing)
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -161,11 +158,10 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
   }, [name]);
 
   const derivedStatus = computeStatus(events, post.status);
-  const isAutoStatus = derivedStatus !== post.status;
-  const cfg = STATUS_CONFIG[post.status]; // 支援手動覆寫後的真實狀態展示
+  const cfg = STATUS_CONFIG[derivedStatus];
 
   const totalOccurrences = useMemo(() => {
-    if (editingEventId) return 1; // 編輯模式下為單筆
+    if (editingEventId) return 1;
     let baseCount = 0;
     if (mode === 'single')  baseCount = selectedDates.length > 0 ? 1 : 0;
     else if (mode === 'range') baseCount = rangeStart && rangeEnd ? 1 : 0;
@@ -213,7 +209,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
     setRangeStart(null); setRangeEnd(null); setMultiDates([]); setRangeStep(0);
   }
 
-  // 點擊編輯現有行程
   function startEditEvent(ev: Event) {
     setEditingEventId(ev.id);
     setName(ev.name);
@@ -228,13 +223,11 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
     setRepeatFreq('none');
   }
 
-  // 儲存或更新事件
   async function handleSaveEvent() {
     if (!name.trim()) return;
     setAdding(true);
 
     if (editingEventId) {
-      // 編輯現有事件
       const d = selectedDates[0] || toDateString(new Date());
       localStore.saveEvent({
         id: editingEventId,
@@ -251,7 +244,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
         repeat_rule: null,
       });
     } else {
-      // 新增事件（支援重複展開）
       let basePairs: { start: string; end: string }[] = [];
       if (mode === 'single') {
         const d = selectedDates[0];
@@ -298,10 +290,13 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
     onRefresh();
   }
 
-  // 手動覆寫狀態
-  async function handleStatusChange(s: Status) {
-    localStore.updatePostFields(post.id, { status: s });
-    onRefresh();
+  // 刪除該成員 (Teammate)
+  async function handleDeleteTeammate() {
+    if (confirm(`確定要刪除成員 ${post.post_id} 及其所有行程嗎？`)) {
+      localStore.deletePost(post.id);
+      onRefresh();
+      onClose();
+    }
   }
 
   async function handleSavePost() {
@@ -362,32 +357,23 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Status Override Dropdown */}
-            <div className="relative group">
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-xs font-medium transition-colors"
-                style={{ borderColor: cfg.color, color: cfg.color }}
-                title="Click to manually override status"
-              >
-                <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: cfg.color }} />
-                {cfg.label}
-              </button>
-              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 hidden group-hover:block w-44">
-                <div className="px-3 py-1.5 text-[10px] text-gray-400 font-semibold uppercase tracking-wider border-b border-gray-100 mb-1">
-                  Manual Status Override
-                </div>
-                {STATUSES.map(s => {
-                  const c = STATUS_CONFIG[s];
-                  return (
-                    <button key={s} onClick={() => handleStatusChange(s)}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors text-left">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
-                      {c.label}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Delete Teammate Button */}
+            <button
+              onClick={handleDeleteTeammate}
+              title="Delete teammate"
+              className="flex items-center gap-1 px-2.5 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-medium transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Teammate</span>
+            </button>
+
+            {/* Auto-status indicator */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-xs font-medium"
+              style={{ borderColor: cfg.color, color: cfg.color }}>
+              <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: cfg.color }} />
+              {cfg.label}
             </div>
+
             <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
               <X className="w-4 h-4 text-gray-500" />
             </button>
@@ -396,7 +382,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
 
         {/* Body */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left: Add / Edit event form */}
           <div className="w-80 shrink-0 border-r border-gray-200 flex flex-col overflow-y-auto">
             <div className="p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -526,7 +511,7 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
             </div>
           </div>
 
-          {/* Right: Events list with Edit & Delete actions */}
+          {/* Right: Events list */}
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -571,7 +556,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                         <RefreshCw className="w-3 h-3 shrink-0 text-gray-400" title={ev.repeat_rule} />
                       )}
                     </div>
-                    {/* Edit Button */}
                     <button
                       onClick={() => startEditEvent(ev)}
                       title="Edit event"
@@ -579,7 +563,6 @@ export default function PersonModal({ post, events, onClose, onRefresh }: Person
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    {/* Delete Button */}
                     <button
                       onClick={() => handleDeleteEvent(ev.id)}
                       title="Delete event"
