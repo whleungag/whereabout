@@ -20,9 +20,7 @@ interface PersonCardProps {
 const MAX_VISIBLE = 4;
 
 export default function PersonCard({ post, events, onClick }: PersonCardProps) {
-  // Derive live status from active events; fall back to stored status
   const liveStatus = computeStatus(events, post.status);
-  const isVacant = liveStatus === 'vacant';
   const cfg = STATUS_CONFIG[liveStatus];
 
   const upcoming = [...events]
@@ -34,7 +32,7 @@ export default function PersonCard({ post, events, onClick }: PersonCardProps) {
   return (
     <article
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-[22px] border border-[#d8e4ed] bg-white p-4 shadow-[0_8px_24px_rgba(31,62,89,.05)] transition duration-200 hover:-translate-y-0.5 hover:border-[#9bcfc8] hover:shadow-[0_14px_34px_rgba(31,62,89,.12)] cursor-pointer ${isVacant ? 'opacity-65' : ''}`}
+      className="group relative overflow-hidden rounded-[22px] border border-[#d8e4ed] bg-white p-4 shadow-[0_8px_24px_rgba(31,62,89,.05)] transition duration-200 hover:-translate-y-0.5 hover:border-[#9bcfc8] hover:shadow-[0_14px_34px_rgba(31,62,89,.12)] cursor-pointer"
     >
       <div className="absolute inset-x-0 top-0 h-1 transition-colors duration-300" style={{ backgroundColor: cfg.color }} />
       <div className="mb-4 flex items-start justify-between gap-3">
